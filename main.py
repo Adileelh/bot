@@ -27,6 +27,7 @@ def root():
     return {"message": "Bot is alive!"}
 
 @app.get("/ping")
+@app.head("/ping", include_in_schema=False)
 def ping():
     return {"status": "ok"}
 
