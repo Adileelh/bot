@@ -34,31 +34,37 @@ def ping():
 def run_fastapi():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
-async def fetch_feed(channel):
+async def fetch_feed_for_channel_and_url(channel, rss_feed_url):
     if os.path.exists(sent_articles_file):
         with open(sent_articles_file, "r") as f:
             sent_articles = yaml.safe_load(f)
     else:
         sent_articles = {}
 
-    for rss_feed_url in RSS_FEED_URLS:
-        feed = feedparser.parse(rss_feed_url)
-        if feed.bozo:
-            print(f"Error parsing RSS feed: {feed.bozo_exception}")
-            continue
+    feed = feedparser.parse(rss_feed_url)
+    if feed.bozo:
+        print(f"Error parsing RSS feed: {feed.bozo_exception}")
+        return
 
-        last_entry = feed.entries[0]
-        if channel.id not in sent_articles:
-            sent_articles[channel.id] = []
-        if last_entry.link not in sent_articles[channel.id]:
-            article_title = last_entry.title
-            article_link = last_entry.link
-            sent_articles[channel.id].append(last_entry.link)
-            try:
-                await channel.send(f"{EMOJI}  |  {article_title}\n\n{article_link}")
-            except Exception as e:
-                print(f"Error sending message: {e}")
+    if not feed.entries:
+        return
 
+    last_entry = feed.entries[0]
+
+    if channel.id not in sent_articles:
+        sent_articles[channel.id] = []
+
+    if last_entry.link not in sent_articles[channel.id]:
+        article_title = last_entry.title
+        article_link = last_entry.link
+        sent_articles[channel.id].append(last_entry.link)
+
+        try:
+            await channel.send(f"{EMOJI}  |  {article_title}\n\n{article_link}")
+        except Exception as e:
+            print(f"Error sending message: {e}")
+
+    # Enregistre l'état
     while True:
         try:
             with open(sent_articles_file, "w") as f:
@@ -68,15 +74,16 @@ async def fetch_feed(channel):
             print(f"Error writing YAML: {e}")
             await asyncio.sleep(1)
 
+
 @client.event
 async def on_ready():
     print(f"Bot logged in as {client.user.name}")
 
     while True:
-        for channel_id in DISCORD_CHANNEL_IDS:
+        for channel_id, feed_url in zip(DISCORD_CHANNEL_IDS, RSS_FEED_URLS):
             channel = client.get_channel(channel_id)
             if channel is not None:
-                await fetch_feed(channel)
+                await fetch_feed_for_channel_and_url(channel)
         await asyncio.sleep(600)
 
 if __name__ == "__main__":
