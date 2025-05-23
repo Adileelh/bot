@@ -9,3 +9,4 @@ pyproject.toml
 # Environments
 .env
 venv/
+.env.dev
