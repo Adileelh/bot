@@ -35,11 +35,16 @@ def run_fastapi():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 async def fetch_feed_for_channel_and_url(channel, rss_feed_url):
+    print(f"\n---\n[FETCH] Channel: {channel.id} / {getattr(channel, 'name', None)}\n[FETCH] RSS: {rss_feed_url}")
+
     if os.path.exists(sent_articles_file):
         with open(sent_articles_file, "r") as f:
             sent_articles = yaml.safe_load(f)
+            print(f"[YAML] Loaded {len(sent_articles.get(channel.id, [])) if sent_articles else 0} articles for channel {channel.id}")
+
     else:
         sent_articles = {}
+        print("[YAML] No sent_articles.yaml file found, starting fresh.")
 
     feed = feedparser.parse(rss_feed_url)
     if feed.bozo:
@@ -49,6 +54,10 @@ async def fetch_feed_for_channel_and_url(channel, rss_feed_url):
     if not feed.entries:
         return
 
+    print(f"[RSS] {len(feed.entries)} entries found. Showing the first 2:")
+    for entry in feed.entries[:2]:
+        print(f"    - {entry.title} ({entry.link})")
+
     last_entry = feed.entries[0]
 
     if channel.id not in sent_articles:
@@ -57,10 +66,13 @@ async def fetch_feed_for_channel_and_url(channel, rss_feed_url):
     if last_entry.link not in sent_articles[channel.id]:
         article_title = last_entry.title
         article_link = last_entry.link
+        print(f"[SEND] Sending article: {article_title} ({article_link})")
         sent_articles[channel.id].append(last_entry.link)
 
         try:
             await channel.send(f"{EMOJI}  |  {article_title}\n\n{article_link}")
+            print("[SEND] Article sent!")
+
         except Exception as e:
             print(f"Error sending message: {e}")
 
@@ -69,6 +81,7 @@ async def fetch_feed_for_channel_and_url(channel, rss_feed_url):
         try:
             with open(sent_articles_file, "w") as f:
                 yaml.dump(sent_articles, f, default_flow_style=False, sort_keys=False)
+                print("[YAML] State saved.")
             break
         except Exception as e:
             print(f"Error writing YAML: {e}")
