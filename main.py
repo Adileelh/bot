@@ -96,7 +96,7 @@ async def on_ready():
         for channel_id, feed_url in zip(DISCORD_CHANNEL_IDS, RSS_FEED_URLS):
             channel = client.get_channel(channel_id)
             if channel is not None:
-                await fetch_feed_for_channel_and_url(channel)
+                await fetch_feed_for_channel_and_url(channel, feed_url)
         await asyncio.sleep(600)
 
 if __name__ == "__main__":
