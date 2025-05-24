@@ -13,19 +13,28 @@ load_dotenv()
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
-DISCORD_CHANNEL_IDS = list(map(int, os.getenv('DISCORD_CHANNEL_IDS').split(',')))
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-RSS_FEED_URLS = os.getenv('RSS_FEED_URLS').split(",")
+DISCORD_CHANNEL_IDS = [
+    int(x.strip())
+    for x in os.getenv('DISCORD_CHANNEL_IDS', '').split(',')
+    if x.strip()
+]
+
+RSS_FEED_URLS = [
+    x.strip()
+    for x in os.getenv('RSS_FEED_URLS', '').split(',')
+    if x.strip()
+]
 EMOJI = "\U0001F4F0"  # Newspaper emoji
 sent_articles_file = "sent_articles.yaml"
 
 print(dict(os.environ))
 
 
-print("DEBUG ENV")
-print("DISCORD_BOT_TOKEN:", DISCORD_BOT_TOKEN[:10] + "..." if DISCORD_BOT_TOKEN else None)
-print("DISCORD_CHANNEL_IDS:", DISCORD_CHANNEL_IDS)
-print("RSS_FEED_URLS:", RSS_FEED_URLS)
+# print("DEBUG ENV")
+# print("DISCORD_BOT_TOKEN:", DISCORD_BOT_TOKEN[:10] + "..." if DISCORD_BOT_TOKEN else None)
+# print("DISCORD_CHANNEL_IDS:", DISCORD_CHANNEL_IDS)
+# print("RSS_FEED_URLS:", RSS_FEED_URLS)
 
 # FastAPI app
 app = FastAPI()
@@ -102,9 +111,13 @@ async def on_ready():
 
     while True:
         for channel_id, feed_url in zip(DISCORD_CHANNEL_IDS, RSS_FEED_URLS):
+            print(f"[LOOP] Trying channel_id={channel_id} with feed_url={feed_url[:80]}...")
             channel = client.get_channel(channel_id)
             if channel is not None:
+                print(f"[LOOP] Got channel {channel_id}, launching fetch...")
                 await fetch_feed_for_channel_and_url(channel, feed_url)
+            else:
+                print(f"[LOOP] Channel {channel_id} not found!")
         await asyncio.sleep(600)
 
 if __name__ == "__main__":
