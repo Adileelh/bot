@@ -19,6 +19,14 @@ RSS_FEED_URLS = os.getenv('RSS_FEED_URLS').split(",")
 EMOJI = "\U0001F4F0"  # Newspaper emoji
 sent_articles_file = "sent_articles.yaml"
 
+print(dict(os.environ))
+
+
+print("DEBUG ENV")
+print("DISCORD_BOT_TOKEN:", DISCORD_BOT_TOKEN[:10] + "..." if DISCORD_BOT_TOKEN else None)
+print("DISCORD_CHANNEL_IDS:", DISCORD_CHANNEL_IDS)
+print("RSS_FEED_URLS:", RSS_FEED_URLS)
+
 # FastAPI app
 app = FastAPI()
 
